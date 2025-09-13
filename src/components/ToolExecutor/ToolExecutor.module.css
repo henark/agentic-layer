@@ -1,0 +1,5 @@
+.executor {
+  padding: 1rem;
+  border: 1px dashed #ccc;
+  border-radius: var(--radius);
+}

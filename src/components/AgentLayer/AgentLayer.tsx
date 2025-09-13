@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { AgentState, AgentTask } from '@/types/agent';
 import { TaskPlanner } from '@/lib/agent/planner';
 import { ToolExecutor } from '@/lib/agent/executor';
@@ -14,7 +14,6 @@ interface AgentLayerProps {
   initialConfig?: Partial<AgentState['config']>;
 }
 
-// Extend component state to include verification results
 interface ComponentState extends AgentState {
   verifications: VerificationResult[];
 }
@@ -35,12 +34,11 @@ export function AgentLayer({ initialConfig }: AgentLayerProps) {
 
   const [userInput, setUserInput] = useState('');
 
-  // These instances are created for the component's lifecycle
-  const [planner] = useState(() => new TaskPlanner({ maxDecompositionDepth: 3, enableSelfReflection: true, planningModel: 'gpt-4' }));
-  const [executor] = useState(() => new ToolExecutor({ maxConcurrentTasks: 3, timeoutMs: 30000, retryAttempts: 2 }));
-  const [governor] = useState(() => new EthicalGuardrails({ enabled: true, maxCostPerTask: 0.10, dailyBudget: 10.0, allowedTools: ['*'], contentFilter: { enabled: false, blockedCategories: [] } }));
-  const [cache] = useState(() => new AgentCache({ enabled: true, ttlMs: 3600000, maxSize: 1000, storage: 'memory' }));
-  const [orchestrator] = useState(() => new AgentOrchestrator({ enableParallelExecution: true, maxAgents: 5, communicationProtocol: 'direct' }));
+  const planner = useMemo(() => new TaskPlanner({ maxDecompositionDepth: 3, enableSelfReflection: true, planningModel: 'gpt-4' }), []);
+  const executor = useMemo(() => new ToolExecutor({ maxConcurrentTasks: 3, timeoutMs: 30000, retryAttempts: 2 }), []);
+  const governor = useMemo(() => new EthicalGuardrails({ enabled: true, maxCostPerTask: 0.10, dailyBudget: 10.0, allowedTools: ['*'], contentFilter: { enabled: false, blockedCategories: [] } }), []);
+  const cache = useMemo(() => new AgentCache({ enabled: true, ttlMs: 3600000, maxSize: 1000, storage: 'memory' }), []);
+  const orchestrator = useMemo(() => new AgentOrchestrator({ enableParallelExecution: true, maxAgents: 5, communicationProtocol: 'direct' }), []);
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,41 +54,35 @@ export function AgentLayer({ initialConfig }: AgentLayerProps) {
     setAgentState(prev => ({
       ...prev,
       messages: [...prev.messages, userMessage],
-      tasks: [], // Reset tasks for new input
-      verifications: [], // Reset verifications
+      tasks: [],
+      verifications: [],
       isRunning: true,
       error: undefined,
     }));
 
-    // This is a mock execution flow for demonstration
-    // In a real app, this would be more complex
-    const mockTask = {
-        id: 'mock_task_1',
-        description: `Simulate execution for: ${userInput}`,
-        status: 'pending',
-        priority: 'high',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-    } as AgentTask;
-
-    const mockTaskResult = {
-        output: `The result of the task is: 2 + 2 = 4 and 3 * 5 = 15. Also, 10 - 2 = 7 is incorrect.`
-    };
-
     try {
-        const claims = await orchestrator['extractor'].extract(mockTaskResult, mockTask);
-        const verificationResults: VerificationResult[] = [];
-        for (const claim of claims) {
-            const result = await orchestrator['verifier'].verify(claim);
-            verificationResults.push(result);
-        }
+      const isAllowed = await governor.checkRequest(userInput);
+      if (!isAllowed.allowed) {
+        throw new Error(isAllowed.reason || 'Request blocked by guardrails');
+      }
 
-        setAgentState(prev => ({
-            ...prev,
-            tasks: [mockTask],
-            verifications: verificationResults,
-            isRunning: false,
-        }));
+      // This is still a simplified flow, but it uses the real modules now.
+      const initialTasks = await planner.decomposeTask(userInput);
+      const prioritizedTasks = await planner.prioritizeTasks(initialTasks);
+
+      setAgentState(prev => ({ ...prev, tasks: prioritizedTasks }));
+
+      const { verificationResults } = await orchestrator.executeTasks(prioritizedTasks, {
+        executor,
+        cache,
+        governor,
+      });
+
+      setAgentState(prev => ({
+        ...prev,
+        verifications: verificationResults,
+        isRunning: false,
+      }));
 
     } catch (error) {
       setAgentState(prev => ({
@@ -112,13 +104,24 @@ export function AgentLayer({ initialConfig }: AgentLayerProps) {
       </div>
 
       <div className={styles.messages}>
-        {/* Messages rendering... */}
+        {agentState.messages.map((message, index) => (
+          <div key={index} className={styles.message}>
+            <div className={styles.messageRole}>{message.role}</div>
+            <div className={styles.messageContent}>{message.content}</div>
+          </div>
+        ))}
       </div>
 
       <div className={styles.execution}>
         <div className={styles.tasks}>
             <h3>Tasks</h3>
-            {/* Tasks rendering... */}
+            {agentState.tasks.length === 0 && <p>No tasks planned.</p>}
+            {agentState.tasks.map(task => (
+              <div key={task.id} className={styles.task}>
+                <div className={styles.taskStatus}>{task.status}</div>
+                <div className={styles.taskDescription}>{task.description}</div>
+              </div>
+            ))}
         </div>
         <div className={styles.verifications}>
             <h3>Verifications</h3>
@@ -128,7 +131,7 @@ export function AgentLayer({ initialConfig }: AgentLayerProps) {
                     <span className={v.isVerified ? styles.verified : styles.notVerified}>
                         {v.isVerified ? '✅ VERIFIED' : '❌ FAILED'}
                     </span>
-                    <p><strong>Claim:</strong> "{v.claim.statement}"</p>
+                    <p><strong>Claim:</strong> &quot;{v.claim.statement}&quot;</p>
                     <p><strong>Evidence:</strong> {v.evidence}</p>
                 </div>
             ))}
@@ -155,7 +158,7 @@ export function AgentLayer({ initialConfig }: AgentLayerProps) {
           disabled={agentState.isRunning || !userInput.trim()}
           className={styles.submitButton}
         >
-          Submit
+          Send
         </button>
       </form>
     </div>

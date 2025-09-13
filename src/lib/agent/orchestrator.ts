@@ -4,12 +4,17 @@ import { ToolExecutor } from './executor';
 import { AgentCache } from './cache';
 import { EthicalGuardrails } from './governor';
 import { ClaimExtractor } from './extractor';
-import { Verifier } from './verifier';
+import { Verifier, VerificationResult } from './verifier';
 
 interface ExecutionContext {
   executor: ToolExecutor;
   cache: AgentCache;
   governor: EthicalGuardrails;
+}
+
+export interface OrchestrationResult {
+  taskResults: Record<string, any>;
+  verificationResults: VerificationResult[];
 }
 
 export class AgentOrchestrator {
@@ -27,38 +32,35 @@ export class AgentOrchestrator {
   async executeTasks(
     tasks: AgentTask[],
     context: ExecutionContext
-  ): Promise<Record<string, any>> {
+  ): Promise<OrchestrationResult> {
     console.log(`Orchestrating execution of ${tasks.length} tasks.`);
-    const results: Record<string, any> = {};
+    const taskResults: Record<string, any> = {};
+    const verificationResults: VerificationResult[] = [];
 
     for (const task of tasks) {
-      // 1. Execute the task
       const taskResult = await context.executor.executeTask(task);
-      results[task.id] = taskResult;
+      taskResults[task.id] = taskResult;
       console.log(`Task ${task.id} executed with result:`, taskResult);
 
-      // 2. Extract claims from the result
       const claims = await this.extractor.extract(taskResult, task);
 
       if (claims.length > 0) {
         console.log(`Found ${claims.length} claims to verify for task ${task.id}.`);
 
-        // 3. Verify each claim
         for (const claim of claims) {
-          const verificationResult = await this.verifier.verify(claim);
-          console.log('Verification Result:', verificationResult);
+          const verification = await this.verifier.verify(claim);
+          verificationResults.push(verification);
+          console.log('Verification Result:', verification);
 
-          // 4. Handle verification failure (simple log for now)
-          if (!verificationResult.isVerified) {
-            console.error(`VERIFICATION FAILED for claim "${claim.statement}". Evidence: ${verificationResult.evidence}`);
-            // In a real system, this would trigger a replan or other corrective action.
-            task.error = `Verification failed: ${verificationResult.evidence}`;
+          if (!verification.isVerified) {
+            console.error(`VERIFICATION FAILED for claim "${claim.statement}". Evidence: ${verification.evidence}`);
+            task.error = `Verification failed: ${verification.evidence}`;
             task.status = 'failed';
           }
         }
       }
     }
 
-    return results;
+    return { taskResults, verificationResults };
   }
 }

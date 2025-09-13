@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { AgentTask } from '@/types/agent';
 import { TaskPlanner } from '@/lib/agent/planner';
 
@@ -6,11 +6,11 @@ export function useTaskPlanner() {
   const [tasks, setTasks] = useState<AgentTask[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  const planner = new TaskPlanner({
+  const planner = useMemo(() => new TaskPlanner({
     maxDecompositionDepth: 3,
     enableSelfReflection: true,
     planningModel: 'gpt-4',
-  });
+  }), []);
 
   const generatePlan = useCallback(async (goal: string) => {
     setIsLoading(true);
