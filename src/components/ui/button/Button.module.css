@@ -1,0 +1,22 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius);
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.button:hover {
+  background-color: hsl(var(--primary) / 0.9);
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

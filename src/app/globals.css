@@ -1,0 +1,84 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
+
+  --radius: 0.5rem;
+  --border: 224 224 224;
+  --input: 224 224 224;
+  --ring: 59 130 246;
+
+  --background: 255 255 255;
+  --foreground: 0 0 0;
+
+  --primary: 59 130 246;
+  --primary-foreground: 255 255 255;
+
+  --secondary: 243 244 246;
+  --secondary-foreground: 17 24 39;
+
+  --destructive: 220 38 38;
+  --destructive-foreground: 255 255 255;
+
+  --muted: 243 244 246;
+  --muted-foreground: 107 114 128;
+
+  --accent: 243 244 246;
+  --accent-foreground: 17 24 39;
+
+  --popover: 255 255 255;
+  --popover-foreground: 0 0 0;
+
+  --card: 255 255 255;
+  --card-foreground: 0 0 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
+
+    --border: 37 37 37;
+    --input: 37 37 37;
+    --ring: 169 169 169;
+
+    --background: 0 0 0;
+    --foreground: 255 255 255;
+
+    --primary: 59 130 246;
+    --primary-foreground: 255 255 255;
+
+    --secondary: 37 37 37;
+    --secondary-foreground: 255 255 255;
+
+    --destructive: 153 27 27;
+    --destructive-foreground: 255 255 255;
+
+    --muted: 37 37 37;
+    --muted-foreground: 169 169 169;
+
+    --accent: 37 37 37;
+    --accent-foreground: 255 255 255;
+
+    --popover: 0 0 0;
+    --popover-foreground: 255 255 255;
+
+    --card: 0 0 0;
+    --card-foreground: 255 255 255;
+  }
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(
+      to bottom,
+      transparent,
+      rgb(var(--background-end-rgb))
+    )
+    rgb(var(--background-start-rgb));
+}

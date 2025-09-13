@@ -1,0 +1,7 @@
+.card {
+  border-radius: var(--radius);
+  border: 1px solid hsl(var(--border));
+  background-color: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+  padding: 1.5rem;
+}
