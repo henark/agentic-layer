@@ -1,0 +1,35 @@
+[tool.poetry]
+name = "agentic-layer"
+version = "0.1.0"
+description = "A flexible and extensible agentic layer for building autonomous agents."
+authors = ["Jules <jules@example.com>"]
+readme = "README.md"
+packages = [{include = "agentic", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+openai = "^1.35.3"
+anthropic = "^0.29.0"
+python-dotenv = "^1.0.1"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.2.2"
+pytest-asyncio = "^0.23.7"
+ruff = "^0.5.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "C90", "N", "D"]
+ignore = ["D203", "D212"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "lf"
